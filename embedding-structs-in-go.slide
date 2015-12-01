@@ -1,0 +1,94 @@
+Embedding Structs in Go
+Subtitle of document
+1 Dec 2015
+
+Robert Mulley
+Software Engineer, JumpCloud
+rmulley@gmail.com
+https://github.com/rmulley/go-fast-sql
+@rmulley
+
+* Embedding Structs - Introduction
+    "Go does not provide the typical, type-driven notion of subclassing, but it does have the ability
+    to "borrow" pieces of an implementation by embedding types within a struct or interface."
+    .
+    .
+    .
+    "There's an important way in which embedding differs from subclassing. When we embed a type, the
+    methods of that type become methods of the outer type, but when they are invoked the receiver of
+    the method is the inner type, not the outer one."
+
+.link https://golang.org/doc/effective_go.html#embedding Effective Go
+
+* Embedding Structs - Things to Think About
+- Left-Right instead of top-down
+- Extending the standard library
+- Combining unrelated pieces of functionality for convenience
+
+* Embedding Structs - A Simple Example
+
+.code animals.go /type/,/^func main/
+
+* Embedding Structs - A Simple Example
+
+.play animals.go /func main/,/^}/
+
+* Embedding Structs - Extending the Std Library
+
+  // DB is a database handle that embeds the standard library's sql.DB struct.
+  //
+  // This means the fastsql.DB struct has, and allows, access to all of the standard library
+  // functionality while also providing a superset of functionality such as batch operations,
+  // automatically created prepared statements, and more.
+  type DB struct {
+    *sql.DB
+    PreparedStatements map[string]*sql.Stmt
+    prepstmts          map[string]*sql.Stmt
+    driverName         string
+    flushInterval      uint
+    batchInserts       map[string]*insert
+  }
+
+.link https://github.com/rmulley/go-fast-sql/blob/master/fast_sql.go#L18 - go-fast-sql
+
+* Embedding Structs - Extending the Std Library
+
+  func main() {
+      // Create new FastSQL DB object with a flush-interval of 100 rows
+      if dbh, err = fastsql.Open(
+        "mysql",
+        "user:pass@tcp(localhost:3306)/db_name?"+url.QueryEscape("charset=utf8mb4,utf8&loc=America/New_York"),
+         100,
+       ); err != nil {
+          log.Fatalln(err)
+      }
+      defer dbh.Close()
+
+      // Some loop performing SQL INSERTs
+      for i <= 250 {
+          if err = dbh.BatchInsert(
+            "INSERT INTO test_table(id, id2, id3) VALUES(?, ?, ?);",
+             i,
+             i + 1,
+             i + 2,
+          ); err != nil {
+              log.Fatalln(err)
+          }
+
+          i++
+      }
+  }
+
+* Embedding Structs - Convenience
+
+.code logging.go /type/,/^func main/
+
+* Embedding Structs - Convenience
+
+.play logging.go /func main/,/^}/
+
+* Conclusion
+
+- Struct embedding can be very useful
+- A great way to extend the standard library
+- Can make your code more convenient by combining disparate pieces of functionality
